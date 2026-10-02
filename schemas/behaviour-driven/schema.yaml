@@ -1,0 +1,202 @@
+name: behaviour-driven
+version: 1
+description: 行为驱动 OpenSpec 工作流 - proposal -> Gherkin 风格 specs -> design -> tasks
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: 概述变更的初始 proposal 文档
+    template: proposal.md
+    instruction: >
+      创建确立本次变更"为什么"的 proposal 文档。
+
+
+      章节：
+
+      - **Why**：1-2 句话说明问题或机会。该变更解决了什么问题？为什么是现在？
+
+      - **What Changes**：变更列表的项目符号。要具体说明新增能力、修改或删除。用 **BREAKING** 标记破坏性变更。
+
+      - **Capabilities**：识别将创建或修改哪些行为 spec：
+        - **New Capabilities**：列出将要引入的新能力。每个都生成一个新 `specs/<name>/spec.md`。使用 kebab-case 名称（例如 `user-auth`、`data-export`）。
+        - **Modified Capabilities**：列出行为正在变更的现有能力。仅在 spec 级别行为发生变化时才列出，而不仅仅是实现细节。每个都需要在 `specs/<name>/spec.md` 处放置一个 OpenSpec Markdown delta 文件。检查 `openspec/specs/` 中的现有 spec 名称。如果没有行为变更则留空。
+      - **Impact**：受影响的代码、API、依赖或系统。
+
+
+      IMPORTANT：Capabilities 章节至关重要。它在 proposal 和 specs 阶段之间建立了契约。
+      在填写之前请研究已有 spec。此处列出的每个 capability 都将需要一个对应的 spec 文件。
+
+
+      保持简洁（1-2 页）。聚焦于"为什么"而不是"怎么做"——实现细节属于 design.md。
+
+
+      这是基石——specs、design 和 tasks 都以此为基础。
+    requires: []
+  - id: specs
+    generates: specs/**/*.md
+    description: 变更的详细规范
+    template: spec.md
+    instruction: >
+      创建定义系统"应当做什么"的规范文件。
+
+
+      为 proposal 的 Capabilities 章节中列出的每个 capability 创建一个 spec 文件。
+
+      - 新能力：使用来自 proposal 的精确 kebab-case 名称（specs/<capability>/spec.md）。
+
+      - 修改的能力：在 specs/<capability>/spec.md 处创建 delta spec 时，使用来自 openspec/specs/<capability>/ 的现有 spec 文件夹名称。
+
+
+      Delta 操作（使用 ## 头部）：
+
+      - **ADDED Requirements**：新能力
+
+      - **MODIFIED Requirements**：变更的行为——必须包含完整更新后的内容
+
+      - **REMOVED Requirements**：已弃用的功能——必须包含 **Reason** 和 **Migration**
+
+      - **RENAMED Requirements**：仅名称变更——使用 FROM:/TO: 格式
+
+
+      格式要求：
+
+      - 每个需求：`### Requirement: <name>` 后跟描述
+
+      - 对规范性需求使用 SHALL/MUST（避免 should/may）
+
+      - 每个场景：`#### Scenario: <name>` 配合 WHEN/THEN 格式
+
+      - **关键**：场景必须使用恰好 4 个井号（`####`）。使用 3 个井号或项目符号将静默失败。
+
+      - 每个需求必须至少有一个场景。
+
+
+      MODIFIED 需求工作流：
+
+      1. 在 openspec/specs/<capability>/spec.md 中定位现有需求
+
+      2. 复制整个需求块（从 `### Requirement:` 一直到所有场景）
+
+      3. 粘贴到 `## MODIFIED Requirements` 下并编辑以反映新行为
+
+      4. 确保头部文本完全匹配（不区分空白）
+
+
+      常见陷阱：使用 MODIFIED 时只放部分内容会在归档时丢失细节。
+
+      如果添加新关注点而不改变现有行为，请改用 ADDED。
+
+
+      示例：
+
+      ```
+
+      ## ADDED Requirements
+
+
+      ### Requirement: 用户可以导出数据
+
+      系统 SHALL 允许用户以 CSV 格式导出他们的数据。
+
+
+      #### Scenario: 成功导出
+
+      - **WHEN** 用户点击"导出"按钮
+
+      - **THEN** 系统下载一个包含所有用户数据的 CSV 文件
+
+
+      ## REMOVED Requirements
+
+
+      ### Requirement: 旧版导出
+
+      **Reason**: 被新导出系统取代
+
+      **Migration**: 使用新的 /api/v2/export 端点
+
+      ```
+
+
+      Spec 应当是可测试的——每个场景都是一个潜在的测试用例。
+    requires:
+      - proposal
+  - id: design
+    generates: design.md
+    description: 包含实现细节的技术设计文档
+    template: design.md
+    instruction: >
+      创建解释本次变更"如何实现"的设计文档。
+
+
+      何时包含 design.md（仅当任一适用时创建）：
+
+      - 跨切面变更（多个服务/模块）或新架构模式
+
+      - 新的外部依赖或重大的数据模型变更
+
+      - 安全、性能或迁移复杂性
+
+      - 在编码前有益于技术决策的歧义
+
+
+      章节：
+
+      - **Context**：背景、当前状态、约束、利益相关者
+
+      - **Goals / Non-Goals**：本设计实现的内容以及明确排除的内容
+
+      - **Decisions**：关键技术选择及其理由（为什么选 X 而不是 Y？）。为每个决策包括考虑的替代方案。
+
+      - **Risks / Trade-offs**：已知限制、可能出错的地方。格式：[Risk] -> Mitigation
+
+      - **Migration Plan**：部署步骤、回滚策略（如适用）
+
+      - **Open Questions**：未决的决策或需要解决的未知数
+
+
+      聚焦于架构和方法，而不是逐行实现。
+
+      引用 proposal 中的动机和 specs 中的需求。
+
+
+      好的设计文档解释技术决策背后的"为什么"。
+    requires:
+      - proposal
+  - id: tasks
+    generates: tasks.md
+    description: 带有可追踪任务的实现清单
+    template: tasks.md
+    instruction: >
+      创建将实现工作分解的任务列表。
+
+
+      **IMPORTANT：完全遵循以下模板。** apply 阶段解析复选框格式以跟踪进度。不使用 `- [ ]` 的任务不会被跟踪。
+
+
+      指南：
+
+      - 在 ## 编号标题下对相关任务进行分组。
+
+      - 每个任务必须是一个复选框：`- [ ] X.Y 任务描述`。
+
+      - 任务应足够小，能在一个会话内完成。
+
+      - 按依赖关系排序任务（什么必须先做？）。
+
+      - 如果实现改变了行为 spec，请包含一个任务，在归档前运行
+      `openspec validate <change> --type change --strict`。
+
+
+      参考 specs 来了解要构建什么，参考 design 来了解如何构建。
+
+      每个任务都应该是可验证的——你知道它什么时候完成。
+    requires:
+      - specs
+      - design
+apply:
+  requires:
+    - tasks
+  tracks: tasks.md
+  instruction: |
+    读取上下文文件，逐步处理待办任务，每完成一项就标记。
+    如遇到阻碍或需要澄清则暂停。

@@ -1,0 +1,95 @@
+# ============================================================================
+# flow-policy.yaml —— 流程分级策略（evidence-driven 的单一事实源）
+#
+# 开发者可直接修改本文件定制各级流程与深度，无需改动 schema.yaml。
+# 修改即时生效。格式约束见文件末尾注释；可用 validate_schema.py 校验。
+#
+# agent 使用方式：在判级（proposal 撰写 / apply 启动）与生成各 artifact
+# 之前，先读本文件，按当前 Tier 的 flow 与各项 mode 执行。
+# ============================================================================
+
+version: 1
+
+rules:
+  # 定级存疑时，向更严格的一级靠拢
+  on_doubt: escalate
+  # 定级可在实施中修订：在 proposal.md 追加修订记录与理由，并同步下游 artifact
+  revision: append-note
+
+tiers:
+  P0:
+    label: 高风险
+    criteria:
+      - 涉及安全、认证、授权、资金或数据删除
+      - 破坏性变更（BREAKING）
+      - 跨 3 个以上模块或服务的横切变更
+      - 无回滚方案的数据迁移
+    flow: [proposal, specs, design, review, test-plan, tasks, verify]
+    review_mode: cross-model     # 跨模型对抗评审（数据边界条款见 review 指令）
+    review_timing: staged        # 随写随审：S1 提案审 → S2 规范审 → S3 设计终审（见 review 指令）
+    design_depth: full           # 完整小节；决策必附备选方案；迁移必含回滚
+    tdd: mandatory               # 红-绿-重构三段式强制
+    adr: mandatory               # 长期决策必须蒸馏 ADR
+    verify_depth: full           # 六项全查
+
+  P1:
+    label: 中风险
+    criteria:
+      - 引入新的外部依赖
+      - 公开 API 行为变化（无破坏）
+      - 核心路径的行为修改
+      - 性能敏感区改动
+    flow: [proposal, specs, design, review, test-plan, tasks, verify]
+    review_mode: fresh-context   # 全新上下文子代理评审
+    review_timing: staged        # 随写随审：S1 提案审 → S2 规范审 → S3 设计终审（见 review 指令）
+    design_depth: full
+    tdd: mandatory
+    adr: mandatory
+    verify_depth: full
+
+  P2:
+    label: 低风险
+    criteria:
+      - 有行为变化、可测试的常规改动，但不触及 P0/P1 判据
+    # 与 OpenSpec 默认 spec-driven 同构：proposal → design → tasks → apply
+    flow: [proposal, specs, design, tasks]
+    review_mode: none            # 不生成 review
+    design_depth: full           # 与 spec-driven 的 design 一致（可按需精简）
+    tdd: optional                # 任务自带验收方式；已有测试先确认起点
+    adr: optional                # 出现长期决策才蒸馏
+    verify_depth: none           # 不生成 verify；apply 跑通相关测试收尾
+
+  P3:
+    label: 琐碎
+    criteria:
+      - 文案、注释、样式调整，不触及运行逻辑
+      - 不改变行为的配置微调
+      - 单文件、已有测试覆盖的小修复
+    # 零 openspec artifact：agent 直接改代码，不留 openspec 记录。
+    # 判据是「不需要留痕」，不是「流程走得快」——若事后需要追溯，
+    # git 提交信息即记录。一旦需要 specs/proposal 级留痕，就不再是 P3。
+    flow: []
+    review_mode: none
+    design_depth: skip
+    tdd: none
+    adr: no
+    verify_depth: none
+    # P3 完全不经 openspec：agent 直接实现并自行验证（跑相关测试/
+    # lint），无需创建 change 目录或任何 artifact。
+
+# ============================================================================
+# 自定义约束（与 schema.yaml 静态依赖图保持一致，否则 CLI status 会显示阻塞）：
+# - 除 flow 为 []（P3 直改模式）外，每级 flow 必须包含 tasks；
+#   包含 proposal 的级别以 proposal 起步（Why 与 Tier 的载体）
+# - 静态存在性依赖：design/review 依赖 proposal；review 依赖 design；
+#   test-plan 依赖 specs；tasks 依赖 specs——flow 启用某环节时，
+#   其前置也须在 flow 中（specs→tasks 主干例外：tasks 的 specs 前置
+#   仅在 flow 含 specs 时要求）
+# - 各 mode 取值：review_mode: none|self|fresh-context|cross-model；
+#   review_timing: none|staged（staged 时 flow 必须含 specs）；
+#   design_depth: skip|brief|full；tdd: none|optional|mandatory；
+#   adr: no|optional|mandatory；verify_depth: none|minimal|full
+# - mode 与 flow 联动：mode 非 none/skip 的环节必须在 flow 中；
+#   tdd: mandatory 时 flow 必须含 test-plan
+# - apply 是阶段不是 artifact，所有含 tasks 的级别隐含，无需写入 flow
+# ============================================================================

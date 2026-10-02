@@ -1,0 +1,55 @@
+name: nanopm
+version: 1
+description: |
+  PM 优先工作流。在实现上游运行 nanopm 的规划流水线（audit → strategy → roadmap → PRD）。
+  当你需要先弄清要构建什么，再让 OpenSpec 弄清如何构建时，请使用此 schema。
+
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: 从 nanopm audit + PRD 派生的产品 proposal
+    template: proposal.md
+    instruction: |
+      基于提供的 nanopm audit 和 PRD 上下文创建产品 proposal。
+      聚焦于问题（来自 audit）、解决方案（来自 PRD）和
+      成功标准（来自 objectives）。如果存在 .nanopm/ 中的
+      nanopm artifact，请引用它们。
+    requires: []
+
+  - id: specs
+    generates: specs/**/*.md
+    description: 作为 SHALL 声明的功能需求，每个 capability 一个文件
+    template: spec.md
+    instruction: |
+      将 PRD 的功能需求转换为 OpenSpec SHALL 声明。
+      每个逻辑 capability 一个 spec 文件。使用 Given/When/Then 场景。
+      如果 .nanopm/prds/ 存在，从那里读取 PRD 并直接提取需求。
+    requires:
+      - proposal
+
+  - id: design
+    generates: design.md
+    description: 从 PRD 约束和 nanopm strategy 派生的技术设计
+    template: design.md
+    instruction: |
+      基于 PRD 的技术备注和 nanopm strategy 上下文创建技术设计。
+      聚焦于关键决策和权衡。
+      如果 .nanopm/STRATEGY.md 存在，引用战略性约束。
+    requires:
+      - proposal
+
+  - id: tasks
+    generates: tasks.md
+    description: 从 PRD 分解出的实现清单
+    template: tasks.md
+    instruction: |
+      从 proposal 和 specs 创建实现清单。
+      如果 .nanopm/tasks/ 已有现有的分解，请将其用作真相来源。
+      每个任务应可独立交付，1-3 天的工作量。
+    requires:
+      - specs
+      - design
+
+apply:
+  requires: [tasks]
+  tracks: tasks.md

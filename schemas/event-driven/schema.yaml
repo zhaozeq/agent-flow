@@ -1,0 +1,99 @@
+name: event-driven
+version: 1
+description: 从发现到 AsyncAPI 优先实现规划的事件驱动工作流
+artifacts:
+  - id: event-storming
+    generates: event-storming.md
+    description: 域事件、命令、参与者和边界的协作发现
+    template: event-storming.md
+    instruction: |
+      捕获锚定下游 artifact 的事件风暴成果。
+
+      关注领域：
+      - 域事件（过去式的业务事实）
+      - 触发行为的命令
+      - 参与者和外部系统
+      - 聚合或边界上下文
+      - 链接命令和事件的自动化/策略
+      - 热点、歧义和未决问题
+
+      保持此 artifact 的协作性和面向发现。它是事件建模、specs、design 和 asyncapi 编写的输入。
+    requires: []
+
+  - id: event-modeling
+    generates: event-modeling.md
+    description: 从触发器到读模型的事件建模流
+    template: event-modeling.md
+    instruction: |
+      将 event-storming 输出转换为结构化的事件流。
+
+      按以下顺序使用泳道：
+      Trigger -> Command -> Event -> Read Model
+
+      添加 Mermaid 图以可视化交互和时间线流。
+      此 artifact 应使依赖关系和消息流显式化，以便稍后的 specs、design 和 asyncapi 工作与发现的行为保持一致。
+    requires:
+      - event-storming
+
+  - id: specs
+    generates: specs/**/*.md
+    description: 带有可测试验收标准的用户故事规范
+    template: specs/spec.md
+    instruction: |
+      编写从发现/建模 artifact 派生的用户故事规范。
+
+      要求：
+      - 使用用户故事格式：As a <role>, I want <capability>, so that <benefit>。
+      - 为每个故事使用 Given/When/Then 验收标准。
+      - 保持每个故事可追溯到 event-storming 和 event-modeling 输出。
+    requires:
+      - event-modeling
+
+  - id: design
+    generates: design.md
+    description: AsyncAPI 编写之前的技术设计决策
+    template: design.md
+    instruction: |
+      在编写 AsyncAPI 之前记录实现级架构决策。
+
+      包括 broker/运行时选择、subject 命名约定、有效负载/schema 格式、安全控制和操作关注点。
+      将决策引用回 specs 和 event-modeling 流。
+    requires:
+      - specs
+
+  - id: asyncapi
+    generates: asyncapi.yaml
+    description: 从先前 artifact 派生的 AsyncAPI 技术规范
+    template: asyncapi.yaml
+    instruction: |
+      从 event-storming、event-modeling、specs 和 design 编写 AsyncAPI。
+
+      完成指导：
+      - `asyncapi.yaml` 在验证成功之前不算完成。
+      - 运行 `asyncapi-cli validate asyncapi.yaml`。
+      - 如果验证失败，请先解决错误再将此 artifact 标记为完成。
+    requires:
+      - design
+
+  - id: tasks
+    generates: tasks.md
+    description: 在已验证 AsyncAPI 之后创建的实现清单
+    template: tasks.md
+    instruction: |
+      仅在上游 artifact 完成后才规划实现。
+
+      先决条件：
+      - Specs 已被审查。
+      - Design 已被审查。
+      - AsyncAPI 已使用 `asyncapi-cli validate asyncapi.yaml` 进行验证。
+
+      将工作分解为小的、按依赖顺序排列的复选框任务。
+    requires:
+      - asyncapi
+
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    读取上下文文件，逐步处理待办任务，每完成一项就标记。
+    如遇到阻碍或需要更多信息则暂停。

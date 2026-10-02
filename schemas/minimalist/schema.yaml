@@ -1,0 +1,19 @@
+name: minimalist
+version: 1
+description: 适用于范围明确、低风险变更的轻量级 schema
+artifacts:
+  - id: specs
+    generates: specs/**/*.md
+    description: 以带有 Given/When/Then 验收标准的用户故事编写的规范
+    template: specs/spec.md
+    requires: []
+  - id: tasks
+    generates: tasks.md
+    description: 带有可追踪任务的实现清单
+    template: tasks.md
+    requires:
+      - specs
+apply:
+  requires:
+    - tasks
+  tracks: tasks.md
