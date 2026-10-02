@@ -1,10 +1,10 @@
 # Delta for <Capability>
 
-<!-- 新能力的 delta 以 ## Purpose 开头（≥50 字符）；既有能力不要加 Purpose -->
+<!-- 新能力必须保留并填写 Purpose（50+ 字符，--strict 强制检查）；既有能力删除本节；删除未使用的操作节及占位内容 -->
 <!-- 注意：## 级 delta 标题必须保持英文原文，CLI 依赖它们解析归档 -->
 <!-- Requirement/Scenario 前缀必须保持英文；名称可以用中文 -->
 <!-- 场景必须恰好 4 个 #；THEN 必须可机械断言 -->
-<!-- P0/P1：每个需求至少 1 个快乐路径场景 + 1 个失败/边界场景 -->
+<!-- P0/P1：考虑相关失败/边界场景，不适用时说明理由；REMOVED/RENAMED 不硬凑场景 -->
 
 ## Purpose
 
@@ -37,4 +37,6 @@
 
 ## RENAMED Requirements
 
-<!-- FROM: <旧名称> / TO: <新名称>，仅改名时使用 -->
+<!-- 仅改名时保留；FROM/TO 必须逐行包含完整 Requirement 标题 -->
+- FROM: `### Requirement: <旧名称>`
+- TO: `### Requirement: <新名称>`

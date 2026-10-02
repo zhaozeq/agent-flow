@@ -12,8 +12,8 @@
 └── README.md        # 该 schema 的说明
 ```
 
-例外：`evidence-driven/` 额外含 `flow-policy.yaml`（流程策略单一事实源），
-本目录根部含 `validate_schema.py`（校验器）。
+例外：`evidence-driven/` 额外含 `flow-policy.yaml` 与 `build_profiles.py`，从共享定义
+生成 P0/P1/P2 三个档位；本目录根部含 `validate_schema.py`（校验器）。
 
 使用方式：把整个子目录复制到目标项目的 `openspec/schemas/<schema-name>/`，然后在 `openspec/config.yaml` 里设 `schema: <schema-name>`（或命令行 `--schema <schema-name>`）。
 
@@ -64,20 +64,18 @@
 
 | 目录 | 说明 | artifact 流 |
 |------|------|-------------|
-| `evidence-driven/` | **本项目原创**，综合对比上述 10 个 schema 后设计：流程深度由 **P0–P3 风险分级**驱动，策略外置于 `flow-policy.yaml`，开发者可改判级标准与各级环节强度而无需 fork schema | P0/P1：proposal → specs → design → review → test-plan → tasks → verify；P2：proposal → design → tasks；P3：零 artifact 直改 |
+| `evidence-driven/` | **本项目原创**，复杂度与风险取更严格档；共享定义与模板生成三个可安装依赖图 | P0：主干 + review/test-plan/verify；P1：主干 + review；P2：proposal → specs → design → tasks；P3：直改 + 验证 |
 
-核心设计：P0/P1 走全流程（跨模型对抗评审 / 新上下文评审、强制 TDD、强制 ADR 蒸馏），
-P2 与默认 `spec-driven` 完全同构（零迁移成本），P3 连流程都不启动（零摩擦，
-agent 直接改代码并自行验证）。它补的是**所有社区 schema 的共同盲区——风险分级**：
-`anvil` 的重流程对高风险恰到好处但对改文案是纯摩擦（团队最后会绕过流程），
-`minimalist` 则砍掉了大改动需要的 Why/How 载体。
+核心设计：保留默认主干，P1/P0 在 design 后、tasks 前做一次独立对抗规划评审；
+P0 再加独立测试台账与正式验证报告。P1 内联覆盖映射，P1/P2 的收尾证据留在 tasks。
+ADR 只在有长期决策时固化，不加固定阶段；P3 仅限不改变行为契约的琐碎修改。
 
-配套 `validate_schema.py`（本目录根部）交叉校验 `flow-policy.yaml` 与 schema 静态
-依赖图的一致性（如 `tdd: mandatory` 却缺 `test-plan`、flow 启用 `review` 却缺
-`design` 前置等矛盾配置直接报错）。改完策略跑一次：
+从实际 `requires` 校验 flow 顺序与模式，策略更新后重新生成安装包：
 
 ```bash
-cd schemas-zh && python3 validate_schema.py
+python3 schemas/validate_schema.py
+python3 schemas/evidence-driven/build_profiles.py --output <项目>/openspec/schemas
+python3 schemas/validate_schema.py --installed <项目>/openspec/schemas
 ```
 
 完整设计说明与决策理由见 `evidence-driven/README.md`。
@@ -98,4 +96,4 @@ cd schemas-zh && python3 validate_schema.py
 | `anvil` | 7 | TDD + 独立评审门禁 |
 | `superpowers-bridge` | 8 | 深度集成 superpowers 技能集 |
 | `e2e-runbooks` | 4 | 端到端测试运维手册 |
-| **`evidence-driven`** | **7（按 P0–P3 分级缩放）** | **任意风险级别的通用流程（本项目自研）** |
+| **`evidence-driven` 系列** | **P0/P1/P2 为 7/5/4；P3 为 0** | **按需求复杂度与风险选择流程（本项目自研）** |
